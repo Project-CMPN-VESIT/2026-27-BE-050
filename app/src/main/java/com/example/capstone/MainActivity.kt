@@ -9,6 +9,7 @@ import com.example.capstone.presentation.LabFragment
 import com.example.capstone.presentation.MedReadyFragment
 import com.example.capstone.presentation.ProfileFragment
 import com.example.capstone.presentation.QuizFragment
+import com.example.capstone.presentation.fragment.AssistantBottomSheetFragment
 import com.example.capstone.presentation.fragment.EmergencyFragment
 import android.view.View
 import android.widget.FrameLayout
@@ -26,6 +27,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var navMedReady: FrameLayout
     private lateinit var navProfile: FrameLayout
     private lateinit var sosButton: View
+    private lateinit var aiOrb: View
     private var currentTabId: Int = R.id.nav_home
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,6 +44,7 @@ class MainActivity : AppCompatActivity() {
         navMedReady = findViewById(R.id.navMedReady)
         navProfile = findViewById(R.id.navProfile)
         sosButton = findViewById(R.id.sosEmergencyButton)
+        aiOrb = findViewById(R.id.aiAssistantOrb)
 
         bindNavClicks()
 
@@ -50,6 +53,10 @@ class MainActivity : AppCompatActivity() {
                 .replace(R.id.mainFragmentContainer, EmergencyFragment())
                 .addToBackStack(null)
                 .commit()
+        }
+
+        aiOrb.setOnClickListener {
+            openAssistant()
         }
         
         try {
@@ -63,6 +70,10 @@ class MainActivity : AppCompatActivity() {
             showTab(currentTabId)
             handleIntent(intent)
         }
+    }
+
+    fun openAssistant() {
+        AssistantBottomSheetFragment().show(supportFragmentManager, "AssistantBottomSheet")
     }
 
     fun selectTab(itemId: Int) {

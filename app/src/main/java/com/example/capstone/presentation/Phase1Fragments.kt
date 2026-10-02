@@ -25,7 +25,6 @@ import androidx.lifecycle.ViewModelProvider
 import org.osmdroid.config.Configuration
 import android.preference.PreferenceManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.example.capstone.AssistantActivity
 import com.example.capstone.DisasterDetailActivity
 import com.example.capstone.MainActivity
 import com.example.capstone.LoginActivity
@@ -48,9 +47,12 @@ import com.example.capstone.data.MedReadyScanResult
 import com.example.capstone.data.SafeReadyPreferences
 import com.example.capstone.data.remote.groq.GroqVisionDataSource
 import com.example.capstone.data.repository.MedReadyRepository
-import com.example.capstone.presentation.fragment.ShelterMapFragment
+import com.example.capstone.presentation.fragment.LiveDisasterDetailFragment
+import com.example.capstone.presentation.fragment.LiveDisasterMapFragment
 import com.example.capstone.presentation.viewmodel.MedReadyViewModel
 import com.example.capstone.presentation.viewmodel.MedReadyViewModelFactory
+import com.example.capstone.presentation.viewmodel.LiveDisasterViewModel
+import com.example.capstone.presentation.viewmodel.LoadState
 import java.io.ByteArrayOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -59,6 +61,7 @@ import java.util.Locale
 class HomeFragment : Fragment() {
     private lateinit var viewModel: HomeViewModel
     private lateinit var meshViewModel: MeshViewModel
+    private lateinit var liveDisasterViewModel: LiveDisasterViewModel
 
     private val locationPermissionRequest = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -66,12 +69,14 @@ class HomeFragment : Fragment() {
         when {
             permissions.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false) -> {
                 viewModel.resolveLocation()
+                refreshLiveStatus()
             }
             permissions.getOrDefault(Manifest.permission.ACCESS_COARSE_LOCATION, false) -> {
                 viewModel.resolveLocation()
+                refreshLiveStatus()
             }
             else -> {
-                // No location access granted.
+                showLiveStatusUnavailable()
             }
         }
     }
@@ -84,6 +89,7 @@ class HomeFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         viewModel = ViewModelProvider(this, defaultViewModelProviderFactory)[HomeViewModel::class.java]
         meshViewModel = ViewModelProvider(this, defaultViewModelProviderFactory)[MeshViewModel::class.java]
+        liveDisasterViewModel = ViewModelProvider(this, defaultViewModelProviderFactory)[LiveDisasterViewModel::class.java]
 
         if (!LocationHelper.hasLocationPermission(requireContext())) {
             locationPermissionRequest.launch(arrayOf(
@@ -111,19 +117,20 @@ class HomeFragment : Fragment() {
             (activity as? MainActivity)?.selectTab(R.id.nav_lab)
         }
 
-        val openShelterMap = {
+        val openLiveMap = {
             parentFragmentManager.beginTransaction()
-                .replace(R.id.mainFragmentContainer, ShelterMapFragment())
+                .replace(R.id.mainFragmentContainer, LiveDisasterMapFragment())
                 .addToBackStack(null)
                 .commit()
         }
 
-        view.findViewById<View>(R.id.disasterMapCard)?.setOnClickListener { openShelterMap() }
-        view.findViewById<View>(R.id.homeMapNavigateButton)?.setOnClickListener { openShelterMap() }
-        view.findViewById<View>(R.id.expandMapButton)?.setOnClickListener { openShelterMap() }
+        view.findViewById<View>(R.id.disasterMapCard)?.setOnClickListener { openLiveMap() }
+        view.findViewById<View>(R.id.homeMapNavigateButton)?.setOnClickListener { openLiveMap() }
+        view.findViewById<View>(R.id.expandMapButton)?.setOnClickListener { openLiveMap() }
+        view.findViewById<View>(R.id.homeLiveMapButton)?.setOnClickListener { openLiveMap() }
 
         view.findViewById<CardView>(R.id.assistantLaunchCard)?.setOnClickListener {
-            startActivity(Intent(requireContext(), AssistantActivity::class.java))
+            (activity as? MainActivity)?.openAssistant()
         }
         view.findViewById<CardView>(R.id.homeSendSosButton)?.setOnClickListener {
             (activity as? MainActivity)?.selectTab(R.id.nav_home)
@@ -199,12 +206,76 @@ class HomeFragment : Fragment() {
 
             recommendationBody.setOnClickListener { recommendationCard.performClick() }
         }
+
+        val liveBadge = view.findViewById<TextView>(R.id.homeLiveStatusBadge)
+        val liveBody = view.findViewById<TextView>(R.id.homeLiveStatusBody)
+        val liveMeta = view.findViewById<TextView>(R.id.homeLiveStatusMeta)
+        liveDisasterViewModel.nearbyAlertSummary.observe(viewLifecycleOwner) { state ->
+            when (state) {
+                is LoadState.Loading -> {
+                    liveBadge.text = getString(R.string.home_live_status_monitoring)
+                    liveBody.text = getString(R.string.live_map_loading)
+                    liveMeta.text = ""
+                }
+                is LoadState.Success -> {
+                    val summary = state.data
+                    liveBadge.text = summary.status.toFriendlyStatus()
+                    liveBody.text = summary.detail
+                    liveMeta.text = summary.locationLabel ?: summary.nearbyEvents.firstOrNull()?.location.orEmpty()
+                    view.findViewById<View>(R.id.homeLiveMapButton)?.isEnabled = true
+                }
+                is LoadState.Empty -> {
+                    liveBadge.text = getString(R.string.home_live_status_safe)
+                    liveBody.text = state.message
+                    liveMeta.text = ""
+                }
+                is LoadState.Error -> {
+                    liveBadge.text = getString(R.string.home_live_status_monitoring)
+                    liveBody.text = state.message
+                    liveMeta.text = ""
+                    view.findViewById<View>(R.id.homeLiveMapButton)?.isEnabled = true
+                }
+                else -> {
+                    liveBadge.text = getString(R.string.home_live_status_monitoring)
+                    liveBody.text = getString(R.string.home_live_map_hint)
+                    liveMeta.text = ""
+                }
+            }
+        }
+        refreshLiveStatus()
     }
 
     override fun onResume() {
         super.onResume()
         if (::viewModel.isInitialized) {
             viewModel.refresh()
+        }
+        if (::liveDisasterViewModel.isInitialized) {
+            refreshLiveStatus()
+        }
+    }
+
+    private fun refreshLiveStatus() {
+        if (!LocationHelper.hasLocationPermission(requireContext())) {
+            showLiveStatusUnavailable()
+            return
+        }
+        LocationHelper.fetchLastKnownLocation(requireContext()) { location ->
+            if (location == null) {
+                activity?.runOnUiThread { showLiveStatusUnavailable() }
+            } else {
+                activity?.runOnUiThread {
+                    liveDisasterViewModel.loadNearby(location.latitude, location.longitude)
+                }
+            }
+        }
+    }
+
+    private fun showLiveStatusUnavailable() {
+        view?.post {
+            view?.findViewById<TextView>(R.id.homeLiveStatusBadge)?.text = getString(R.string.home_live_status_monitoring)
+            view?.findViewById<TextView>(R.id.homeLiveStatusBody)?.text = getString(R.string.home_live_status_unavailable)
+            view?.findViewById<TextView>(R.id.homeLiveStatusMeta)?.text = getString(R.string.home_live_map_hint)
         }
     }
 
@@ -216,6 +287,17 @@ class HomeFragment : Fragment() {
             in 17..20 -> getString(R.string.home_greeting_evening)
             else -> getString(R.string.home_greeting_night)
         }
+    }
+}
+
+private fun String.toFriendlyStatus(): String {
+    return when (uppercase(Locale.US)) {
+        "SAFE" -> "SAFE"
+        "MONITORING", "WARNING_MONITORING", "NO_ACTIVE_EVENT" -> "MONITORING"
+        "AT_RISK" -> "AT RISK"
+        "AFFECTED" -> "AFFECTED"
+        "EMERGENCY" -> "EMERGENCY"
+        else -> "MONITORING"
     }
 }
 
@@ -524,7 +606,7 @@ class ProfileFragment : Fragment() {
 
         downloadMaps?.setOnClickListener {
             parentFragmentManager.beginTransaction()
-                .replace(R.id.mainFragmentContainer, ShelterMapFragment())
+                .replace(R.id.mainFragmentContainer, LiveDisasterMapFragment())
                 .addToBackStack(null)
                 .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
                 .commit()

@@ -98,9 +98,7 @@
         <activity
             android:name=".SituationalGameActivity"
             android:exported="false" />
-        <activity
-            android:name=".AssistantActivity"
-            android:exported="false" />
+
 
         <activity
             android:name=".EmergencyContactsHostActivity"
@@ -126,9 +124,7 @@
         <activity
             android:name=".SituationalGameActivity"
             android:exported="false" />
-        <activity
-            android:name=".AssistantActivity"
-            android:exported="false" />
+
 
         <service
             android:name=".service.EmergencyService"

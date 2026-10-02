@@ -115,6 +115,8 @@
     <string name="assistant_card_title">AI Assistant</string>
     <string name="assistant_card_body">Get quick disaster-first answers powered by Groq.</string>
     <string name="assistant_card_action">Open Assistant</string>
+    <string name="assistant_orb_description">AI Assistant</string>
+    <string name="assistant_title_sheet">SafeReady Assistant</string>
     <string name="assistant_activity_title">SafeReady Assistant</string>
     <string name="assistant_activity_subtitle">Ask disaster preparedness questions anytime</string>
     <string name="home_map_alert_body">Flood risk in coastal areas</string>
@@ -126,6 +128,18 @@
     <string name="home_risk_heading">Moderate Risk Level</string>
     <string name="home_risk_body">Heavy rainfall expected this week</string>
     <string name="home_risk_view">View</string>
+    <string name="home_live_status_heading">Current Status</string>
+    <string name="home_live_status_safe">SAFE</string>
+    <string name="home_live_status_monitoring">MONITORING</string>
+    <string name="home_live_status_at_risk">AT RISK</string>
+    <string name="home_live_status_affected">AFFECTED</string>
+    <string name="home_live_status_emergency">EMERGENCY</string>
+    <string name="home_live_status_unavailable">Live disaster backend unavailable.</string>
+    <string name="home_live_map_action">Open Live Map</string>
+    <string name="home_live_map_hint">Tap to view real worldwide live events.</string>
+    <string name="home_historical_risk_heading">Historical ML Risk</string>
+    <string name="emergency_live_alert_title">Nearby Live Alert</string>
+    <string name="live_alert_view_details">View Live Details</string>
     <string name="training_title">Training</string>
     <string name="progress_overall_percent_format">%1$d%%</string>
     <string name="progress_chapters_completed_format">%1$d/%2$d chapters completed</string>
@@ -204,6 +218,37 @@
     <string name="emergency_exit_confirm_message">This will stop broadcasting your location and disable mesh networking.</string>
     <string name="emergency_exit_confirm_yes">Exit</string>
     <string name="emergency_exit_confirm_no">Stay in Emergency Mode</string>
+
+    <!-- Live Disaster Intelligence -->
+    <string name="navigation_back">Back</string>
+    <string name="live_map_title">Live Disaster Map</string>
+    <string name="live_map_loading">Loading live events...</string>
+    <string name="live_map_empty">No live disaster events were returned by the backend.</string>
+    <string name="live_feed_global">Global Feed</string>
+    <string name="live_feed_india">India Feed</string>
+    <string name="source_status_heading">Source Status</string>
+    <string name="live_detail_title">Event Details</string>
+    <string name="live_detail_loading">Loading event details...</string>
+    <string name="live_detail_why_heading">Why am I seeing this?</string>
+    <string name="live_detail_view_evidence">View Evidence</string>
+    <string name="live_detail_severity_format">Severity: %1$s</string>
+    <string name="live_detail_time_format">Event time: %1$s</string>
+    <string name="live_detail_coordinates_format">Coordinates: %1$.4f, %2$.4f</string>
+    <string name="live_detail_coordinates_missing">Coordinates: not available</string>
+    <string name="live_detail_affected_area_format">Affected area: %1$s</string>
+    <string name="live_detail_affected_area_missing">Affected area: not available</string>
+    <string name="live_detail_source_format">Source info: %1$s</string>
+    <string name="live_detail_confidence_format">Evidence confidence: %1$d%%</string>
+    <string name="live_detail_location_format">Location: %1$s</string>
+    <string name="live_detail_location_missing">Location: not available</string>
+    <string name="live_detail_source_missing">No source summary available</string>
+    <string name="live_evidence_title">Evidence</string>
+    <string name="evidence_loading">Loading evidence...</string>
+    <string name="evidence_empty">No evidence was returned for this event.</string>
+    <string name="evidence_open_source">Open Source URL</string>
+    <string name="evidence_contributed">Contributed to event decision</string>
+    <string name="evidence_not_contributed">Did not contribute to the event decision</string>
+    <string name="event_confidence_format">Evidence confidence: %1$d%%</string>
 
     <!-- MedReady -->
     <string name="medready_title">MedReady</string>

@@ -37,8 +37,12 @@ import com.example.capstone.data.EmergencyRepository
 import com.example.capstone.data.SafeReadyPreferences
 import com.example.capstone.data.repository.MeshRepository
 import com.example.capstone.location.LocationHelper
+import com.example.capstone.presentation.fragment.LiveDisasterDetailFragment
+import com.example.capstone.presentation.fragment.LiveDisasterMapFragment
 import com.example.capstone.presentation.adapter.MeshDeviceAdapter
 import com.example.capstone.presentation.adapter.MeshMessageAdapter
+import com.example.capstone.presentation.viewmodel.LiveDisasterViewModel
+import com.example.capstone.presentation.viewmodel.LoadState
 import com.example.capstone.presentation.viewmodel.MeshViewModel
 import com.example.capstone.service.EmergencyService
 import com.google.android.material.button.MaterialButton
@@ -48,11 +52,13 @@ import kotlinx.coroutines.launch
 
 class EmergencyFragment : Fragment() {
     private lateinit var meshViewModel: MeshViewModel
+    private lateinit var liveDisasterViewModel: LiveDisasterViewModel
     private lateinit var emergencyRepository: EmergencyRepository
     private lateinit var prefs: SafeReadyPreferences
     private lateinit var meshAdapter: MeshMessageAdapter
     private lateinit var deviceAdapter: MeshDeviceAdapter
     private var selectedStatus: String? = null
+    private var nearbyEventId: String? = null
     private var connectivityManager: ConnectivityManager? = null
     private var cameraManager: CameraManager? = null
     private var torchEnabled = false
@@ -78,6 +84,7 @@ class EmergencyFragment : Fragment() {
         val allGranted = permissions.entries.all { it.value }
         if (allGranted) {
             Toast.makeText(requireContext(), R.string.emergency_permissions_granted, Toast.LENGTH_SHORT).show()
+            refreshNearbyAlert()
         } else {
             Toast.makeText(requireContext(), R.string.emergency_permissions_required, Toast.LENGTH_LONG).show()
         }
@@ -108,6 +115,7 @@ class EmergencyFragment : Fragment() {
         checkAndRequestPermissions()
 
         meshViewModel = ViewModelProvider(requireActivity())[MeshViewModel::class.java]
+        liveDisasterViewModel = ViewModelProvider(this, defaultViewModelProviderFactory)[LiveDisasterViewModel::class.java]
         prefs = SafeReadyPreferences(requireContext())
         emergencyRepository = EmergencyRepository(requireContext(), prefs, MeshRepository(requireContext()))
         prefs.setEmergencyModeEnabled(true)
@@ -119,6 +127,7 @@ class EmergencyFragment : Fragment() {
         
         refreshNetworkStatus()
         view.findViewById<TextView>(R.id.gpsStatusValue)?.text = if (LocationHelper.hasLocationPermission(requireContext())) getString(R.string.emergency_status_on) else getString(R.string.emergency_status_off_short)
+        refreshNearbyAlert()
 
         updateEmergencyStatus()
         requireContext().registerReceiver(batteryReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
@@ -135,6 +144,8 @@ class EmergencyFragment : Fragment() {
         val sheltersCard = view.findViewById<MaterialCardView>(R.id.emergencySheltersCard)
         val contactsCard = view.findViewById<MaterialCardView>(R.id.emergencyContactsCard)
         val checklistCard = view.findViewById<MaterialCardView>(R.id.emergencyChecklistCard)
+        val liveAlertCard = view.findViewById<MaterialCardView>(R.id.emergencyLiveAlertCard)
+        val liveAlertAction = view.findViewById<MaterialButton>(R.id.emergencyLiveAlertAction)
         val btnManualDiscover = view.findViewById<MaterialButton>(R.id.btnManualDiscover)
         val rvMessages = view.findViewById<RecyclerView>(R.id.rvEmergencyMessages)
         
@@ -188,6 +199,8 @@ class EmergencyFragment : Fragment() {
         btnManualDiscover.setOnClickListener {
             meshViewModel.restartMesh()
         }
+        liveAlertCard.setOnClickListener { openNearbyLiveAlert() }
+        liveAlertAction.setOnClickListener { openNearbyLiveAlert() }
 
         sosBtn.setOnClickListener {
             if (!prefs.getEmergencyModeEnabled()) {
@@ -241,6 +254,9 @@ class EmergencyFragment : Fragment() {
         val lastAction = view.findViewById<TextView>(R.id.emergencyLastAction)
         val meshStatusValue = view.findViewById<TextView>(R.id.meshStatusValue)
         val meshConnectedCountText = view.findViewById<TextView>(R.id.meshConnectedCountText)
+        val liveBadge = view.findViewById<TextView>(R.id.emergencyLiveAlertBadge)
+        val liveBody = view.findViewById<TextView>(R.id.emergencyLiveAlertBody)
+        val liveMeta = view.findViewById<TextView>(R.id.emergencyLiveAlertMeta)
 
         viewLifecycleOwner.lifecycleScope.launch {
             meshViewModel.actionMessage.collectLatest { m ->
@@ -272,6 +288,82 @@ class EmergencyFragment : Fragment() {
             meshViewModel.nearbyDevices.collectLatest { devices ->
                 deviceAdapter.submitList(devices)
             }
+        }
+
+        liveDisasterViewModel.nearbyAlertSummary.observe(viewLifecycleOwner) { state ->
+            when (state) {
+                is LoadState.Loading -> {
+                    liveBadge.text = getString(R.string.home_live_status_monitoring)
+                    liveBody.text = getString(R.string.live_map_loading)
+                    liveMeta.text = ""
+                    nearbyEventId = null
+                }
+                is LoadState.Success -> {
+                    val summary = state.data
+                    nearbyEventId = summary.nearbyEvents.firstOrNull()?.eventId
+                    liveBadge.text = summary.status.toFriendlyStatus()
+                    liveBody.text = summary.detail
+                    liveMeta.text = summary.locationLabel ?: summary.nearbyEvents.firstOrNull()?.location.orEmpty()
+                }
+                is LoadState.Empty -> {
+                    nearbyEventId = null
+                    liveBadge.text = getString(R.string.home_live_status_safe)
+                    liveBody.text = state.message
+                    liveMeta.text = ""
+                }
+                is LoadState.Error -> {
+                    nearbyEventId = null
+                    liveBadge.text = getString(R.string.home_live_status_monitoring)
+                    liveBody.text = state.message
+                    liveMeta.text = ""
+                }
+                else -> {
+                    nearbyEventId = null
+                    liveBadge.text = getString(R.string.home_live_status_monitoring)
+                    liveBody.text = getString(R.string.home_live_map_hint)
+                    liveMeta.text = ""
+                }
+            }
+        }
+    }
+
+    private fun refreshNearbyAlert() {
+        if (!LocationHelper.hasLocationPermission(requireContext())) {
+            showNearbyAlertUnavailable()
+            return
+        }
+        LocationHelper.fetchLastKnownLocation(requireContext()) { location ->
+            if (location == null) {
+                activity?.runOnUiThread { showNearbyAlertUnavailable() }
+            } else {
+                activity?.runOnUiThread {
+                    liveDisasterViewModel.loadNearby(location.latitude, location.longitude)
+                }
+            }
+        }
+    }
+
+    private fun showNearbyAlertUnavailable() {
+        view?.post {
+            view?.findViewById<TextView>(R.id.emergencyLiveAlertBadge)?.text = getString(R.string.home_live_status_monitoring)
+            view?.findViewById<TextView>(R.id.emergencyLiveAlertBody)?.text = getString(R.string.home_live_status_unavailable)
+            view?.findViewById<TextView>(R.id.emergencyLiveAlertMeta)?.text = getString(R.string.home_live_map_hint)
+        }
+        nearbyEventId = null
+    }
+
+    private fun openNearbyLiveAlert() {
+        val eventId = nearbyEventId
+        if (!eventId.isNullOrBlank()) {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.mainFragmentContainer, LiveDisasterDetailFragment.newInstance(eventId))
+                .addToBackStack(null)
+                .commit()
+        } else {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.mainFragmentContainer, LiveDisasterMapFragment())
+                .addToBackStack(null)
+                .commit()
         }
     }
 
@@ -385,5 +477,16 @@ class EmergencyFragment : Fragment() {
         } catch (_: Exception) {}
         runCatching { torchCameraId?.let { cameraManager?.setTorchMode(it, false) } }
         runCatching { connectivityManager?.unregisterNetworkCallback(networkCallback) }
+    }
+}
+
+private fun String.toFriendlyStatus(): String {
+    return when (uppercase()) {
+        "SAFE" -> "SAFE"
+        "MONITORING", "WARNING_MONITORING", "NO_ACTIVE_EVENT" -> "MONITORING"
+        "AT_RISK" -> "AT RISK"
+        "AFFECTED" -> "AFFECTED"
+        "EMERGENCY" -> "EMERGENCY"
+        else -> "MONITORING"
     }
 }

@@ -66,6 +66,12 @@ google-services_suhan.json
 .kotlin/
 
 # =========================
+# Node / Backend
+# =========================
+backend/node_modules/
+backend/.env
+
+# =========================
 # Misc
 # =========================
 *.hprof

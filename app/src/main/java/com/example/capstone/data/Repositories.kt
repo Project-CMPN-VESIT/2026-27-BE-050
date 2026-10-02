@@ -31,6 +31,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.http.GET
 import java.util.Locale
 
 class SafeReadyPreferences(context: Context) {
@@ -855,9 +856,13 @@ class WeatherRepository {
             .create(WeatherStackApi::class.java)
     }
 
-    private val apiKey = "a5895ed001bdb8e23e08d3ccd7313419"
+    private val apiKey: String
+        get() = com.example.capstone.BuildConfig.WEATHERSTACK_API_KEY
 
     suspend fun fetchWeather(city: String): String = withContext(Dispatchers.IO) {
+        if (apiKey.isBlank()) {
+            return@withContext "Weather Unavailable"
+        }
         try {
             val response = api.getCurrentWeather(apiKey, city)
             val current = response.current
@@ -870,24 +875,46 @@ class WeatherRepository {
 }
 
 class NewsRepository {
-    private val api: MediaStackApi by lazy {
+    private val backendApi: BackendAlertsApi by lazy {
+        val baseUrl = com.example.capstone.BuildConfig.BACKEND_BASE_URL.ifBlank { "http://10.0.2.2:3000/" }
         Retrofit.Builder()
-            .baseUrl("http://api.mediastack.com/v1/")
+            .baseUrl(baseUrl)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
-            .create(MediaStackApi::class.java)
+            .create(BackendAlertsApi::class.java)
     }
-
-    private val apiKey = "48470002df12aa019b17b39626fd95ec"
 
     suspend fun fetchDisasterNews(city: String): List<NewsArticle> = withContext(Dispatchers.IO) {
         try {
-            // Searching for disaster related keywords in the city
-            val keywords = "disaster OR earthquake OR flood OR cyclone OR landslide $city"
-            val response = api.getNews(apiKey, keywords)
-            response.data
-        } catch (e: Exception) {
+            val alerts = backendApi.getAlerts()
+            alerts.map { alert ->
+                NewsArticle(
+                    title = alert.title ?: "Disaster alert",
+                    description = "${alert.disasterType ?: "Disaster"} alert in ${alert.location ?: "the affected region"}.",
+                    source = alert.location ?: "SafeReady backend",
+                    url = "",
+                    category = alert.disasterType ?: "disaster",
+                    published_at = (alert.lastUpdated ?: System.currentTimeMillis()).toString()
+                )
+            }
+        } catch (_: Exception) {
             emptyList()
         }
     }
+
+    private interface BackendAlertsApi {
+        @GET("alerts")
+        suspend fun getAlerts(): List<BackendAlertResponse>
+    }
+
+    private data class BackendAlertResponse(
+        val eventId: String? = null,
+        val disasterType: String? = null,
+        val alertLevel: String? = null,
+        val eventStatus: String? = null,
+        val title: String? = null,
+        val location: String? = null,
+        val evidenceConfidence: Double? = null,
+        val lastUpdated: Long? = null
+    )
 }

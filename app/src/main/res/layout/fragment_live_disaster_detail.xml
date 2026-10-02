@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/sr_bg_main"
+    android:clipToPadding="false"
+    android:fillViewport="true"
+    android:paddingBottom="@dimen/fragment_bottom_padding">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="@dimen/screen_padding_horizontal"
+        android:paddingEnd="@dimen/screen_padding_horizontal"
+        android:paddingTop="@dimen/spacing_lg">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/detailBackButton"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:contentDescription="@string/navigation_back"
+                android:padding="8dp"
+                android:src="@drawable/ic_arrow_back" />
+
+            <TextView
+                android:id="@+id/detailScreenTitle"
+                style="@style/TextStyle.Heading.Medium"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/spacing_sm"
+                android:textColor="@color/sr_text_primary" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/detailLoading"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_lg"
+            android:text="@string/live_detail_loading"
+            android:textColor="@color/sr_text_secondary"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/detailError"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_lg"
+            android:textColor="@color/status_danger"
+            android:visibility="gone" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_lg"
+            app:cardBackgroundColor="@color/sr_bg_card"
+            app:cardCornerRadius="@dimen/corner_2xl"
+            app:cardElevation="@dimen/elevation_light"
+            app:strokeColor="@color/border_light"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="@dimen/spacing_lg">
+
+                <TextView
+                    android:id="@+id/detailDisasterType"
+                    style="@style/TextStyle.Label.Large"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/sr_text_primary" />
+
+                <TextView
+                    android:id="@+id/detailStatus"
+                    style="@style/TextStyle.Label.Medium"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_sm"
+                    android:background="@drawable/bg_risk_badge"
+                    android:paddingStart="@dimen/spacing_md"
+                    android:paddingTop="@dimen/spacing_xs"
+                    android:paddingEnd="@dimen/spacing_md"
+                    android:paddingBottom="@dimen/spacing_xs"
+                    android:textColor="@color/text_inverse" />
+
+                <TextView
+                    android:id="@+id/detailLocation"
+                    style="@style/TextStyle.Body.Small"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_sm"
+                    android:textColor="@color/sr_text_secondary" />
+
+                <TextView
+                    android:id="@+id/detailSeverity"
+                    style="@style/TextStyle.Body.Small"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_xs"
+                    android:textColor="@color/sr_text_secondary" />
+
+                <TextView
+                    android:id="@+id/detailTime"
+                    style="@style/TextStyle.Body.Small"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_xs"
+                    android:textColor="@color/sr_text_secondary" />
+
+                <TextView
+                    android:id="@+id/detailCoordinates"
+                    style="@style/TextStyle.Body.Small"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_xs"
+                    android:textColor="@color/sr_text_secondary" />
+
+                <TextView
+                    android:id="@+id/detailAffectedArea"
+                    style="@style/TextStyle.Body.Small"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_xs"
+                    android:textColor="@color/sr_text_secondary" />
+
+                <TextView
+                    android:id="@+id/detailSource"
+                    style="@style/TextStyle.Body.Small"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_xs"
+                    android:textColor="@color/sr_text_secondary" />
+
+                <TextView
+                    android:id="@+id/detailConfidence"
+                    style="@style/TextStyle.Body.Small"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_xs"
+                    android:textColor="@color/sr_text_secondary" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_lg"
+            android:text="@string/live_detail_why_heading"
+            style="@style/TextStyle.Label.Large"
+            android:textColor="@color/sr_text_primary" />
+
+        <TextView
+            android:id="@+id/detailWhy"
+            style="@style/TextStyle.Body.Small"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_sm"
+            android:textColor="@color/sr_text_secondary" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/detailViewEvidence"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_lg"
+            android:text="@string/live_detail_view_evidence"
+            android:textAllCaps="false" />
+
+    </LinearLayout>
+
+</androidx.core.widget.NestedScrollView>

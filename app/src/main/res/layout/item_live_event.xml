@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="@dimen/spacing_md"
+    app:cardBackgroundColor="@color/sr_bg_card"
+    app:cardCornerRadius="@dimen/corner_2xl"
+    app:cardElevation="@dimen/elevation_light"
+    app:strokeColor="@color/border_light"
+    app:strokeWidth="1dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="@dimen/spacing_lg">
+
+        <TextView
+            android:id="@+id/eventTitle"
+            style="@style/TextStyle.Label.Large"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/sr_text_primary" />
+
+        <TextView
+            android:id="@+id/eventLocation"
+            style="@style/TextStyle.Body.Small"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_xs"
+            android:textColor="@color/sr_text_secondary" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_sm"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/eventStatus"
+                style="@style/TextStyle.Label.Medium"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_risk_badge"
+                android:paddingStart="@dimen/spacing_md"
+                android:paddingTop="@dimen/spacing_xs"
+                android:paddingEnd="@dimen/spacing_md"
+                android:paddingBottom="@dimen/spacing_xs"
+                android:textColor="@color/text_inverse" />
+
+            <TextView
+                android:id="@+id/eventSeverity"
+                style="@style/TextStyle.Body.Small"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/spacing_sm"
+                android:textColor="@color/sr_text_secondary" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/eventTime"
+            style="@style/TextStyle.Body.Small"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_sm"
+            android:textColor="@color/sr_text_secondary" />
+
+        <TextView
+            android:id="@+id/eventConfidence"
+            style="@style/TextStyle.Body.Small"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_xs"
+            android:textColor="@color/sr_text_secondary" />
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

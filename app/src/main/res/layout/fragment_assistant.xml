@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/dashboard_bg">
+    android:background="@color/bg_app">
 
     <TextView
         android:id="@+id/assistantTitle"
@@ -13,9 +13,9 @@
         android:layout_marginEnd="20dp"
         android:layout_marginTop="20dp"
         android:fontFamily="@font/plus_jakarta_sans"
-        android:text="Assistant"
-        android:textColor="@color/dashboard_name"
-        android:textSize="28sp"
+        android:text="@string/assistant_title_sheet"
+        android:textColor="@color/text_primary"
+        android:textSize="22sp"
         android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -30,7 +30,7 @@
         android:layout_marginTop="6dp"
         android:fontFamily="@font/plus_jakarta_sans"
         android:text="@string/assistant_suggestion_default"
-        android:textColor="@color/dashboard_greeting"
+        android:textColor="@color/text_secondary"
         android:textSize="13sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -57,7 +57,7 @@
             android:paddingHorizontal="12dp"
             android:paddingVertical="6dp"
             android:text="@string/assistant_status_offline"
-            android:textColor="@color/dashboard_name"
+            android:textColor="@color/text_primary"
             android:fontFamily="@font/plus_jakarta_sans"
             android:textSize="12sp" />
 
@@ -96,7 +96,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="20dp"
         android:layout_marginEnd="20dp"
-        android:layout_marginBottom="88dp"
+        android:layout_marginBottom="16dp"
         android:background="@drawable/bg_white_card"
         android:elevation="2dp"
         android:padding="14dp"
@@ -122,8 +122,8 @@
             android:hint="@string/assistant_input_hint"
             android:inputType="textCapSentences"
             android:padding="14dp"
-            android:textColor="@color/dashboard_input"
-            android:textColorHint="@color/dashboard_hint"
+            android:textColor="@color/text_primary"
+            android:textColorHint="@color/text_tertiary"
             android:fontFamily="@font/plus_jakarta_sans"
             app:layout_constraintEnd_toStartOf="@id/assistantSendButton"
             app:layout_constraintStart_toStartOf="parent"
@@ -140,7 +140,7 @@
             android:textColor="@color/white"
             android:fontFamily="@font/plus_jakarta_sans"
             android:textStyle="bold"
-            app:backgroundTint="@color/safeready_navy"
+            app:backgroundTint="@color/sr_primary_navy"
             app:cornerRadius="18dp"
             app:layout_constraintBottom_toBottomOf="@id/assistantInput"
             app:layout_constraintEnd_toEndOf="parent"

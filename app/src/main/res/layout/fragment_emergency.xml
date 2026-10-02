@@ -188,6 +188,66 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/emergencyLiveAlertCard"
+            style="@style/Card.Dark"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/spacing_3xl">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="@dimen/spacing_md">
+
+                <TextView
+                    android:id="@+id/emergencyLiveAlertTitle"
+                    style="@style/TextStyle.Emergency.Heading"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/emergency_live_alert_title" />
+
+                <TextView
+                    android:id="@+id/emergencyLiveAlertBadge"
+                    style="@style/TextStyle.Emergency.Label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_sm"
+                    android:background="@drawable/bg_risk_badge"
+                    android:paddingStart="@dimen/spacing_md"
+                    android:paddingTop="@dimen/spacing_xs"
+                    android:paddingEnd="@dimen/spacing_md"
+                    android:paddingBottom="@dimen/spacing_xs"
+                    android:text="@string/home_live_status_monitoring"
+                    android:textColor="@color/text_inverse" />
+
+                <TextView
+                    android:id="@+id/emergencyLiveAlertBody"
+                    style="@style/TextStyle.Emergency.Body"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_sm"
+                    android:text="@string/home_live_map_hint" />
+
+                <TextView
+                    android:id="@+id/emergencyLiveAlertMeta"
+                    style="@style/TextStyle.Emergency.Label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_xs"
+                    android:textColor="@color/text_secondary" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/emergencyLiveAlertAction"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_md"
+                    android:text="@string/live_alert_view_details"
+                    android:textAllCaps="false" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
         <!-- ===== SOS BUTTON ===== -->
         <FrameLayout
             android:id="@+id/btnSendSosEmergency"

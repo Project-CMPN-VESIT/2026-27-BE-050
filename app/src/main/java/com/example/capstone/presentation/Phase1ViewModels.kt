@@ -18,7 +18,6 @@ import com.example.capstone.data.RecommendationCard
 import com.example.capstone.data.RecommendationRepository
 import com.example.capstone.data.LocationRepository
 import com.example.capstone.data.WeatherRepository
-import com.example.capstone.data.NewsRepository
 import com.example.capstone.data.ProgressRepository
 import com.example.capstone.data.GamificationSummary
 import com.example.capstone.data.ProgressSnapshot
@@ -34,6 +33,7 @@ import com.example.capstone.data.remote.firebase.FirebaseUserDataSource
 import com.example.capstone.data.repository.AuthRepository
 import com.example.capstone.data.repository.RiskRepository
 import com.example.capstone.data.remote.risk.RiskSummary
+import com.example.capstone.location.LocationHelper
 
 
 data class HomeState(
@@ -46,10 +46,14 @@ data class HomeState(
     val progressSnapshot: ProgressSnapshot = ProgressSnapshot(0, emptyList()),
     val isEmergencyModeEnabled: Boolean = false,
     val weather: String = "--°C",
-    val riskLevel: String = "No Active Alerts",
-    val riskDescription: String = "Your region is currently stable",
+    val riskLevel: String = "Historical ML Risk",
+    val riskDescription: String = "Historical baseline risk only",
     val medReadyReadiness: Int = -1,
-    val locationProfile: Map<String, RiskSummary> = emptyMap()
+    val locationProfile: Map<String, RiskSummary> = emptyMap(),
+    val liveStatus: String = "MONITORING",
+    val liveStatusDescription: String = "Grant location permission to check nearby live disasters.",
+    val liveEventId: String? = null,
+    val liveEventTitle: String? = null
 )
 
 data class TrainingState(
@@ -115,7 +119,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val recommendationRepository = RecommendationRepository(lessonRepository, progressRepository)
     private val locationRepository = LocationRepository(application.applicationContext)
     private val weatherRepository = WeatherRepository()
-    private val newsRepository = NewsRepository()
     private val riskRepository = RiskRepository()
     private val medReadyRepository = com.example.capstone.data.repository.MedReadyRepository(
         com.example.capstone.data.remote.groq.GroqVisionDataSource(),
@@ -151,10 +154,15 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             progressSnapshot = ProgressSnapshot(overall, snapshot),
             isEmergencyModeEnabled = emergencyMode,
             weather = state.value?.weather ?: "--°C",
-            riskLevel = state.value?.riskLevel ?: (if (emergencyMode) "High Risk Alert" else "Low Risk Level"),
-            riskDescription = state.value?.riskDescription ?: (if (emergencyMode) "Active disaster detected in your area" else "No immediate threats identified"),
+            riskLevel = state.value?.riskLevel ?: "Historical ML Risk",
+            riskDescription = state.value?.riskDescription ?: "Historical baseline risk only",
             medReadyReadiness = medReadyScore,
-            locationProfile = state.value?.locationProfile ?: emptyMap()
+            locationProfile = state.value?.locationProfile ?: emptyMap(),
+            liveStatus = state.value?.liveStatus ?: "MONITORING",
+            liveStatusDescription = state.value?.liveStatusDescription
+                ?: "Grant location permission to check nearby live disasters.",
+            liveEventId = state.value?.liveEventId,
+            liveEventTitle = state.value?.liveEventTitle
         ))
     }
 
@@ -167,7 +175,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 if (stateName != null) userRepository.saveRegion(profile.city, stateName)
                 refresh()
                 fetchWeather(targetState)
-                fetchRiskAlerts(targetState)
                 fetchLocationProfile(targetState)
             } else {
                 // If no state available anywhere, try to refresh with defaults
@@ -184,33 +191,45 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 // Only fetch if we haven't successfully fetched using state yet, 
                 // or if we want city-specific data
                 fetchWeather(targetCity)
-                fetchRiskAlerts(targetCity)
+            }
+        }
+        LocationHelper.fetchLastKnownLocation(getApplication()) { location ->
+            if (location != null) {
+                fetchLiveStatus(location.latitude, location.longitude)
             }
         }
     }
 
-    private fun fetchRiskAlerts(location: String) {
+    private fun fetchLiveStatus(latitude: Double, longitude: Double) {
         viewModelScope.launch {
             try {
-                val news = newsRepository.fetchDisasterNews(location)
+                val nearby = com.example.capstone.data.repository.LiveDisasterRepository().fetchNearbyEvents(latitude, longitude)
                 state.value?.let { current ->
-                    if (news.isNotEmpty()) {
-                        state.postValue(current.copy(
-                            riskLevel = "Regional Alert",
-                            riskDescription = news.first().title
-                        ))
-                    } else {
-                        state.postValue(current.copy(
-                            riskLevel = "Low Risk Level",
-                            riskDescription = "No active disasters reported in $location"
-                        ))
+                    val top = nearby.firstOrNull()
+                    val liveStatus = when {
+                        emergencyRepository.isEmergencyModeEnabled() && top?.alertLevel == com.example.capstone.data.disaster.AlertLevel.AFFECTED -> "EMERGENCY"
+                        top?.alertLevel == com.example.capstone.data.disaster.AlertLevel.AFFECTED -> "AFFECTED"
+                        top?.alertLevel == com.example.capstone.data.disaster.AlertLevel.AT_RISK -> "AT RISK"
+                        top?.alertLevel == com.example.capstone.data.disaster.AlertLevel.WARNING_MONITORING -> "MONITORING"
+                        nearby.isEmpty() -> "SAFE"
+                        else -> "MONITORING"
                     }
+                    val liveDescription = when {
+                        top != null -> "${top.displayTitle()} • ${top.location} • ${top.evidenceConfidence} evidence confidence"
+                        else -> "No nearby live disasters detected."
+                    }
+                    state.postValue(current.copy(
+                        liveStatus = liveStatus,
+                        liveStatusDescription = liveDescription,
+                        liveEventId = top?.eventId,
+                        liveEventTitle = top?.displayTitle()
+                    ))
                 }
             } catch (e: Exception) {
                 state.value?.let { current ->
                     state.postValue(current.copy(
-                        riskLevel = "Risk Info Unavailable",
-                        riskDescription = "Could not fetch local risk data"
+                        liveStatus = "MONITORING",
+                        liveStatusDescription = "Live disaster backend unavailable."
                     ))
                 }
             }

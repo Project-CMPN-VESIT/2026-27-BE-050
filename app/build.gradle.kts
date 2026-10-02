@@ -10,6 +10,16 @@ val localProperties = Properties().apply {
 }
 
 val groqApiKey = (localProperties.getProperty("groq_api_key") ?: System.getenv("GROQ_API_KEY") ?: "").trim()
+val weatherstackApiKey = (localProperties.getProperty("weatherstack_api_key") ?: System.getenv("WEATHERSTACK_API_KEY") ?: "").trim()
+val mediastackApiKey = (localProperties.getProperty("mediastack_api_key") ?: System.getenv("MEDIASTACK_API_KEY") ?: "").trim()
+val xBearerToken = (localProperties.getProperty("x_bearer_token") ?: System.getenv("X_BEARER_TOKEN") ?: "").trim()
+val youtubeApiKey = (localProperties.getProperty("youtube_api_key") ?: System.getenv("YOUTUBE_API_KEY") ?: "").trim()
+val redditClientId = (localProperties.getProperty("reddit_client_id") ?: System.getenv("REDDIT_CLIENT_ID") ?: "").trim()
+val redditClientSecret = (localProperties.getProperty("reddit_client_secret") ?: System.getenv("REDDIT_CLIENT_SECRET") ?: "").trim()
+val redditUserAgent = (localProperties.getProperty("reddit_user_agent") ?: System.getenv("REDDIT_USER_AGENT") ?: "").trim()
+val redditRefreshToken = (localProperties.getProperty("reddit_refresh_token") ?: System.getenv("REDDIT_REFRESH_TOKEN") ?: "").trim()
+val imdApiKey = (localProperties.getProperty("imd_api_key") ?: System.getenv("IMD_API_KEY") ?: "").trim()
+val backendBaseUrl = (localProperties.getProperty("backend_base_url") ?: System.getenv("BACKEND_BASE_URL") ?: "http://10.0.2.2:3000/").trim()
 
 plugins {
     alias(libs.plugins.android.application)
@@ -37,6 +47,16 @@ android {
         versionName = "1.0"
 
         buildConfigField("String", "GROQ_API_KEY", "\"${groqApiKey.kotlinStringLiteral()}\"")
+        buildConfigField("String", "WEATHERSTACK_API_KEY", "\"${weatherstackApiKey.kotlinStringLiteral()}\"")
+        buildConfigField("String", "MEDIASTACK_API_KEY", "\"${mediastackApiKey.kotlinStringLiteral()}\"")
+        buildConfigField("String", "X_BEARER_TOKEN", "\"${xBearerToken.kotlinStringLiteral()}\"")
+        buildConfigField("String", "YOUTUBE_API_KEY", "\"${youtubeApiKey.kotlinStringLiteral()}\"")
+        buildConfigField("String", "REDDIT_CLIENT_ID", "\"${redditClientId.kotlinStringLiteral()}\"")
+        buildConfigField("String", "REDDIT_CLIENT_SECRET", "\"${redditClientSecret.kotlinStringLiteral()}\"")
+        buildConfigField("String", "REDDIT_USER_AGENT", "\"${redditUserAgent.kotlinStringLiteral()}\"")
+        buildConfigField("String", "REDDIT_REFRESH_TOKEN", "\"${redditRefreshToken.kotlinStringLiteral()}\"")
+        buildConfigField("String", "IMD_API_KEY", "\"${imdApiKey.kotlinStringLiteral()}\"")
+        buildConfigField("String", "BACKEND_BASE_URL", "\"${backendBaseUrl.kotlinStringLiteral()}\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
