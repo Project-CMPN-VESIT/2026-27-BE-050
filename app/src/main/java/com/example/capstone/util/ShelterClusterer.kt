@@ -11,6 +11,8 @@ import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.content.Intent
 import android.widget.Toast
+import android.widget.Button
+import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import com.example.capstone.R
 import com.example.capstone.data.local.database.entity.HospitalEntity
@@ -88,6 +90,18 @@ class ShelterClusterer(private val context: Context) {
         marker.infoWindow = object : MarkerInfoWindow(org.osmdroid.library.R.layout.bonuspack_bubble, mapView) {
             override fun onOpen(item: Any?) {
                 super.onOpen(item)
+                val existing = mView.findViewWithTag<Button>("open_maps_button")
+                if (existing == null) {
+                    val btn = Button(context).apply {
+                        text = context.getString(R.string.open_in_maps)
+                        tag = "open_maps_button"
+                        setOnClickListener {
+                            openInGoogleMaps(shelter.latitude, shelter.longitude)
+                            close()
+                        }
+                    }
+                    (mView as? ViewGroup)?.addView(btn)
+                }
                 mView.setOnClickListener {
                     openInGoogleMaps(shelter.latitude, shelter.longitude)
                     close()
@@ -115,6 +129,18 @@ class ShelterClusterer(private val context: Context) {
         marker.infoWindow = object : MarkerInfoWindow(org.osmdroid.library.R.layout.bonuspack_bubble, mapView) {
             override fun onOpen(item: Any?) {
                 super.onOpen(item)
+                val existing = mView.findViewWithTag<Button>("open_maps_button")
+                if (existing == null) {
+                    val btn = Button(context).apply {
+                        text = context.getString(R.string.open_in_maps)
+                        tag = "open_maps_button"
+                        setOnClickListener {
+                            openInGoogleMaps(hospital.latitude, hospital.longitude)
+                            close()
+                        }
+                    }
+                    (mView as? ViewGroup)?.addView(btn)
+                }
                 mView.setOnClickListener {
                     openInGoogleMaps(hospital.latitude, hospital.longitude)
                     close()
@@ -131,14 +157,15 @@ class ShelterClusterer(private val context: Context) {
 
     private fun openInGoogleMaps(lat: Double, lon: Double) {
         val packageManager = context.packageManager
-        val googleNavIntent = Intent(Intent.ACTION_VIEW, Uri.parse("google.navigation:q=$lat,$lon")).apply {
+        val coords = String.format(java.util.Locale.US, "%.6f,%.6f", lat, lon)
+        val googleNavIntent = Intent(Intent.ACTION_VIEW, Uri.parse("google.navigation:q=$coords")).apply {
             setPackage("com.google.android.apps.maps")
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-        val geoIntent = Intent(Intent.ACTION_VIEW, Uri.parse("geo:$lat,$lon?q=$lat,$lon")).apply {
+        val geoIntent = Intent(Intent.ACTION_VIEW, Uri.parse("geo:$coords?q=$coords")).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-        val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/maps/dir/?api=1&destination=$lat,$lon")).apply {
+        val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/maps/dir/?api=1&destination=$coords")).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
 

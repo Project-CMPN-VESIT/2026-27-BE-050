@@ -197,6 +197,12 @@ class EmergencyFragment : Fragment() {
         }
         checklistCard.setOnClickListener { showChecklistDialog() }
         btnManualDiscover.setOnClickListener {
+            // Ensure permissions and show the Discover screen
+            checkAndRequestPermissions()
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.mainFragmentContainer, com.example.capstone.presentation.fragment.MeshDiscoverFragment())
+                .addToBackStack(null)
+                .commit()
             meshViewModel.restartMesh()
         }
         liveAlertCard.setOnClickListener { openNearbyLiveAlert() }

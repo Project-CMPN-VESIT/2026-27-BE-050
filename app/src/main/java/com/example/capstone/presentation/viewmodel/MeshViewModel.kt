@@ -58,6 +58,28 @@ class MeshViewModel(application: Application) : AndroidViewModel(application) {
         repo.start(displayName)
     }
 
+    fun startAdvertisingOnly() {
+        if (!isEmergencyModeEnabled()) {
+            _actionMessage.value = "Emergency Mode is required to start mesh service"
+            return
+        }
+        val name = prefs.getUserProfile().name
+        _actionMessage.value = "Starting advertise-only mode..."
+        repo.startAdvertisingOnly(name)
+        _actionMessage.value = "Advertise-only started"
+    }
+
+    fun startDiscoveryOnly() {
+        if (!isEmergencyModeEnabled()) {
+            _actionMessage.value = "Emergency Mode is required to start mesh service"
+            return
+        }
+        val name = prefs.getUserProfile().name
+        _actionMessage.value = "Starting discovery-only mode..."
+        repo.startDiscoveryOnly(name)
+        _actionMessage.value = "Discovery-only started"
+    }
+
     fun stop() {
         repo.stop()
     }
@@ -90,6 +112,7 @@ class MeshViewModel(application: Application) : AndroidViewModel(application) {
 
     fun restartMesh() {
         val name = prefs.getUserProfile().name
+        _actionMessage.value = "Restarting mesh discovery..."
         repo.stop()
         repo.start(name)
         _actionMessage.value = "Mesh discovery restarted"

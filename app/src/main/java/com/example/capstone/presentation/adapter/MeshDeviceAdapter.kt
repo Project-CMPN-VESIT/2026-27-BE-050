@@ -12,7 +12,7 @@ import com.example.capstone.R
 import com.example.capstone.data.MeshDevice
 import java.util.Locale
 
-class MeshDeviceAdapter : ListAdapter<MeshDevice, MeshDeviceAdapter.ViewHolder>(DiffCallback()) {
+class MeshDeviceAdapter(private val onItemClick: ((MeshDevice) -> Unit)? = null) : ListAdapter<MeshDevice, MeshDeviceAdapter.ViewHolder>(DiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context)
@@ -21,7 +21,9 @@ class MeshDeviceAdapter : ListAdapter<MeshDevice, MeshDeviceAdapter.ViewHolder>(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(getItem(position))
+        val item = getItem(position)
+        holder.bind(item)
+        holder.itemView.setOnClickListener { onItemClick?.invoke(item) }
     }
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {

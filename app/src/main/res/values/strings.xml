@@ -123,6 +123,7 @@
     <string name="home_map_nav">Navigate</string>
     <string name="home_map_target">Locate</string>
     <string name="map_open_error">No map app available to open navigation.</string>
+    <string name="open_in_maps">Open in Google Maps</string>
     <string name="home_map_segment_live">Live</string>
     <string name="home_map_segment_24h">24h</string>
     <string name="home_risk_heading">Moderate Risk Level</string>
@@ -226,6 +227,7 @@
     <string name="live_map_empty">No live disaster events were returned by the backend.</string>
     <string name="live_feed_global">Global Feed</string>
     <string name="live_feed_india">India Feed</string>
+    <string name="live_feed_local">Local Feed</string>
     <string name="source_status_heading">Source Status</string>
     <string name="live_detail_title">Event Details</string>
     <string name="live_detail_loading">Loading event details...</string>

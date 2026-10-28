@@ -519,6 +519,25 @@ class ProgressRepository(
         return snapshot.sumOf { it.percent } / snapshot.size
     }
 
+    /**
+     * Daily challenge topic rotation.
+     * Returns the stored topic if it was set in the last 24 hours, otherwise picks a deterministic
+     * module key for today's topic and persists it.
+     */
+    fun getDailyChallengeTopic(): String {
+        val lastTimestamp = prefs.getDailyChallengeTimestamp()
+        val now = System.currentTimeMillis()
+        val dayMs = 24L * 60L * 60L * 1000L
+        val stored = prefs.getDailyChallengeTopic()
+        if (!stored.isNullOrBlank() && (now - lastTimestamp) < dayMs) return stored
+        val modules = lessons.getModules()
+        if (modules.isEmpty()) return "disaster-preparedness"
+        val index = ((now / dayMs) % modules.size).toInt()
+        val topic = modules[index].key
+        prefs.setDailyChallengeTopic(topic, now)
+        return topic
+    }
+
     fun getRecommendedModule(region: String?, completionHint: String? = null): DisasterModule {
         return lessons.getRecommendedModule(region, completionHint)
     }

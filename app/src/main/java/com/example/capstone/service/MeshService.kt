@@ -28,6 +28,16 @@ import java.util.concurrent.ConcurrentHashMap
  * Nearby Connections is preferred because it handles discovery and transport
  * without requiring manual BLE state management.
  */
+import android.Manifest
+import android.content.pm.PackageManager
+import android.util.Log
+import androidx.core.content.ContextCompat
+import com.google.android.gms.common.GoogleApiAvailability
+import android.os.Handler
+import android.os.Looper
+
+private const val TAG = "MeshService"
+
 class MeshService(private val context: Context) {
 
     interface Listener {
@@ -83,9 +93,14 @@ class MeshService(private val context: Context) {
 
     private val endpointDiscoveryCallback = object : EndpointDiscoveryCallback() {
         override fun onEndpointFound(endpointId: String, info: com.google.android.gms.nearby.connection.DiscoveredEndpointInfo) {
+            Log.d(TAG, "Endpoint found: $endpointId • ${info.endpointName}")
             endpointNames[endpointId] = info.endpointName
             listener?.onEndpointDiscovered(endpointId, info.endpointName, null)
+            emitState()
+            // Request connection; handle failures explicitly
             client.requestConnection(localDeviceName, endpointId, connectionLifecycleCallback)
+                .addOnSuccessListener { Log.d(TAG, "Requested connection to $endpointId") }
+                .addOnFailureListener { Log.e(TAG, "Connection request failed to $endpointId: ${it.message}") }
         }
 
         override fun onEndpointLost(endpointId: String) {
@@ -107,7 +122,45 @@ class MeshService(private val context: Context) {
             return
         }
 
+        // Verify Google Play Services availability
+        val gps = GoogleApiAvailability.getInstance()
+        val status = gps.isGooglePlayServicesAvailable(context)
+        if (status != com.google.android.gms.common.ConnectionResult.SUCCESS) {
+            listener.onConnectionError("Google Play Services unavailable: code=$status")
+            return
+        }
+
+        // Check runtime permissions needed for Nearby Connections
+        val missingPerms = mutableListOf<String>()
+        // ACCESS_WIFI_STATE / CHANGE_WIFI_STATE are normal permissions but verify manifest; surface for diagnostics if missing
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_WIFI_STATE) != PackageManager.PERMISSION_GRANTED) {
+            missingPerms.add(Manifest.permission.ACCESS_WIFI_STATE)
+        }
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CHANGE_WIFI_STATE) != PackageManager.PERMISSION_GRANTED) {
+            missingPerms.add(Manifest.permission.CHANGE_WIFI_STATE)
+        }
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            missingPerms.add(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
+                missingPerms.add(Manifest.permission.BLUETOOTH_SCAN)
+            }
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_ADVERTISE) != PackageManager.PERMISSION_GRANTED) {
+                missingPerms.add(Manifest.permission.BLUETOOTH_ADVERTISE)
+            }
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+                missingPerms.add(Manifest.permission.BLUETOOTH_CONNECT)
+            }
+        }
+        if (missingPerms.isNotEmpty()) {
+            // Wi‑Fi permissions are typically granted via manifest; include them to help debug misconfigured manifests
+            listener.onConnectionError("Missing runtime/manifest permissions for Nearby Connections: ${missingPerms.joinToString()}")
+            return
+        }
+
         serviceStarted = true
+        Log.d(TAG, "Starting mesh: advertising + discovery")
         startAdvertising()
         startDiscovery()
         emitState()
@@ -120,6 +173,92 @@ class MeshService(private val context: Context) {
         connectedEndpoints.clear()
         endpointNames.clear()
         serviceStarted = false
+        emitState()
+    }
+
+    // Start advertising only (diagnostic mode)
+    fun startAdvertisingOnly(displayName: String, listener: Listener) {
+        this.listener = listener
+        this.localDeviceName = displayName.take(48).ifBlank { "SafeReady" }
+
+        val gps = GoogleApiAvailability.getInstance()
+        val status = gps.isGooglePlayServicesAvailable(context)
+        if (status != com.google.android.gms.common.ConnectionResult.SUCCESS) {
+            listener.onConnectionError("Google Play Services unavailable: code=$status")
+            return
+        }
+
+        val missingPerms = mutableListOf<String>()
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_WIFI_STATE) != PackageManager.PERMISSION_GRANTED) {
+            missingPerms.add(Manifest.permission.ACCESS_WIFI_STATE)
+        }
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CHANGE_WIFI_STATE) != PackageManager.PERMISSION_GRANTED) {
+            missingPerms.add(Manifest.permission.CHANGE_WIFI_STATE)
+        }
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            missingPerms.add(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_ADVERTISE) != PackageManager.PERMISSION_GRANTED) {
+                missingPerms.add(Manifest.permission.BLUETOOTH_ADVERTISE)
+            }
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+                missingPerms.add(Manifest.permission.BLUETOOTH_CONNECT)
+            }
+        }
+        if (missingPerms.isNotEmpty()) {
+            listener.onConnectionError("Missing runtime/manifest permissions for Nearby Connections: ${missingPerms.joinToString()}")
+            return
+        }
+
+        serviceStarted = true
+        Log.d(TAG, "Starting advertise-only mode")
+        startAdvertising()
+        emitState()
+    }
+
+    // Start discovery only (diagnostic mode)
+    fun startDiscoveryOnly(displayName: String, listener: Listener) {
+        this.listener = listener
+        this.localDeviceName = displayName.take(48).ifBlank { "SafeReady" }
+
+        val gps = GoogleApiAvailability.getInstance()
+        val status = gps.isGooglePlayServicesAvailable(context)
+        if (status != com.google.android.gms.common.ConnectionResult.SUCCESS) {
+            listener.onConnectionError("Google Play Services unavailable: code=$status")
+            return
+        }
+
+        val missingPerms = mutableListOf<String>()
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_WIFI_STATE) != PackageManager.PERMISSION_GRANTED) {
+            missingPerms.add(Manifest.permission.ACCESS_WIFI_STATE)
+        }
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CHANGE_WIFI_STATE) != PackageManager.PERMISSION_GRANTED) {
+            missingPerms.add(Manifest.permission.CHANGE_WIFI_STATE)
+        }
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            missingPerms.add(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
+                missingPerms.add(Manifest.permission.BLUETOOTH_SCAN)
+            }
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+                missingPerms.add(Manifest.permission.BLUETOOTH_CONNECT)
+            }
+        }
+        if (missingPerms.isNotEmpty()) {
+            listener.onConnectionError("Missing runtime/manifest permissions for Nearby Connections: ${missingPerms.joinToString()}")
+            return
+        }
+
+        serviceStarted = true
+        Log.d(TAG, "Starting discovery-only mode")
+        // Ensure advertising is stopped before discovery-only to avoid STATUS_ALREADY_HAVE_ACTIVE_STRATEGY
+        runCatching { client.stopAdvertising() }
+        Handler(Looper.getMainLooper()).postDelayed({
+            startDiscovery()
+        }, 800)
         emitState()
     }
 
@@ -164,19 +303,51 @@ class MeshService(private val context: Context) {
             context.packageName,
             connectionLifecycleCallback,
             options,
-        ).addOnFailureListener { listener?.onConnectionError("Advertising failed: ${it.message}") }
+        ).addOnSuccessListener {
+            Log.d(TAG, "Advertising started successfully")
+            emitState()
+        }.addOnFailureListener { 
+            Log.e(TAG, "Advertising failed: ${it.message}")
+            listener?.onConnectionError("Advertising failed: ${it.message}") 
+        }
     }
 
-    private fun startDiscovery() {
+    private fun startDiscovery(strategy: Strategy = Strategy.P2P_CLUSTER, attempt: Int = 0) {
         val options = DiscoveryOptions.Builder()
-            .setStrategy(Strategy.P2P_CLUSTER)
+            .setStrategy(strategy)
             .build()
 
+        Log.d(TAG, "Starting discovery (strategy=$strategy, attempt=$attempt)")
         client.startDiscovery(
             context.packageName,
             endpointDiscoveryCallback,
             options,
-        ).addOnFailureListener { listener?.onConnectionError("Discovery failed: ${it.message}") }
+        ).addOnSuccessListener {
+            Log.d(TAG, "Discovery started successfully (strategy=$strategy)")
+            emitState()
+        }.addOnFailureListener { ex ->
+            val msg = ex.message ?: ex.toString()
+            Log.e(TAG, "Discovery failed (strategy=$strategy): $msg")
+
+            // Common troubleshooting: Play Services, missing perms, OEM background restrictions.
+            // Provide automatic fallbacks: try alternate strategy, then try discovery-only (stop advertising), then report error.
+            if (attempt == 0 && strategy == Strategy.P2P_CLUSTER) {
+                Log.w(TAG, "Discovery fallback: trying P2P_STAR")
+                // small delay before retry to avoid immediate thrash
+                Handler(Looper.getMainLooper()).postDelayed({ startDiscovery(Strategy.P2P_STAR, attempt + 1) }, 500)
+                return@addOnFailureListener
+            }
+
+            if (attempt <= 1) {
+                Log.w(TAG, "Discovery fallback: stopping advertising and retrying discovery-only (attempt=${attempt + 1})")
+                runCatching { client.stopAdvertising() }
+                Handler(Looper.getMainLooper()).postDelayed({ startDiscovery(strategy, attempt + 1) }, 500)
+                return@addOnFailureListener
+            }
+
+            // If all fallbacks exhausted, surface the error for diagnostics
+            listener?.onConnectionError("Discovery failed: $msg")
+        }
     }
 
     private fun emitState(lastError: String? = null) {

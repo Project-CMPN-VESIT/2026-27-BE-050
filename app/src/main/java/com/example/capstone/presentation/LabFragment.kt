@@ -46,8 +46,13 @@ class LabFragment : Fragment() {
 
         // Daily Challenge card
         view.findViewById<View>(R.id.dailyChallengeCard)?.setOnClickListener {
+            // Choose today's daily challenge topic (rotates every 24h)
+            val prefs = com.example.capstone.data.SafeReadyPreferences(requireContext())
+            val lessons = com.example.capstone.data.LessonRepository()
+            val progressRepo = com.example.capstone.data.ProgressRepository(prefs, lessons)
+            val topic = progressRepo.getDailyChallengeTopic()
             parentFragmentManager.beginTransaction()
-                .replace(R.id.mainFragmentContainer, QuizFragment.newInstance("disaster preparedness"))
+                .replace(R.id.mainFragmentContainer, QuizFragment.newInstance(topic))
                 .addToBackStack(null)
                 .commit()
         }

@@ -29,7 +29,7 @@ class GroqVisionDataSource {
          * Current Groq vision model.
          */
         private const val MODEL =
-            "qwen/qwen3.6-27b"
+            "qwen/qwen3.8-27b"
 
         /*
          * Keep this reasonably small because your current
@@ -346,6 +346,29 @@ class GroqVisionDataSource {
                     )
                 }
 
+            } catch (e: ModelNotFoundException) {
+                Log.w(TAG, "Groq model not found; trying alternative models")
+                val alternatives = listOf("gpt-image-1", "gpt-4o-mini-vision", "groq/vision-stable")
+                var altAttempted = false
+                for (alt in alternatives) {
+                    if (alt == MODEL) continue
+                    try {
+                        Log.d(TAG, "Trying alternative model: $alt")
+                        request.put("model", alt)
+                        val altResponse = sendRequest(request)
+                        return@withContext parseResponse(altResponse)
+                    } catch (ex: RateLimitException) {
+                        throw ex
+                    } catch (ex: Exception) {
+                        Log.w(TAG, "Alternative model $alt failed: ${ex.message}")
+                        altAttempted = true
+                    }
+                }
+                if (altAttempted) {
+                    throw IOException("All configured vision models failed. Please verify your Groq API key and available models.")
+                } else {
+                    throw IOException("Groq model not found and no alternatives configured.")
+                }
             } catch (e: Exception) {
 
                 Log.e(
@@ -368,6 +391,7 @@ class GroqVisionDataSource {
         throw IOException(
             "Groq Vision request failed."
         )
+
     }
 
     /*
@@ -498,6 +522,11 @@ class GroqVisionDataSource {
                 throw RateLimitException(
                     errorBody
                 )
+            }
+
+            // MODEL NOT FOUND -> fallback
+            if (responseCode == 404) {
+                throw ModelNotFoundException(errorBody)
             }
 
             throw IOException(
@@ -925,4 +954,9 @@ class GroqVisionDataSource {
     private class RateLimitException(
         message: String
     ) : IOException(message)
+
+    private class ModelNotFoundException(
+        message: String
+    ) : IOException(message)
+
 }

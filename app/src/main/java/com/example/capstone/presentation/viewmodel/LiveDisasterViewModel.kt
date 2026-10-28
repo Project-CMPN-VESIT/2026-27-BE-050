@@ -62,6 +62,24 @@ class LiveDisasterViewModel(application: Application) : AndroidViewModel(applica
         }
     }
 
+    fun loadIndiaEvents() {
+        _globalEvents.value = LoadState.Loading
+        viewModelScope.launch {
+            try {
+                val events = repository.fetchIndiaDisasters()
+                _globalEvents.postValue(
+                    if (events.isEmpty()) {
+                        LoadState.Empty("No live disaster events available for India right now.")
+                    } else {
+                        LoadState.Success(events)
+                    }
+                )
+            } catch (e: Exception) {
+                _globalEvents.postValue(LoadState.Error(messageFor(e)))
+            }
+        }
+    }
+
     fun loadEvent(eventId: String) {
         _event.value = LoadState.Loading
         viewModelScope.launch {

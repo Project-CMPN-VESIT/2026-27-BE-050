@@ -133,6 +133,24 @@ class MeshRepository(context: Context) {
         _state.value = _state.value.copy(isAdvertising = service.isRunning(), isDiscovering = service.isRunning())
     }
 
+    fun startAdvertisingOnly(displayName: String) {
+        if (!prefs.getEmergencyModeEnabled()) {
+            _state.value = _state.value.copy(lastError = "Emergency Mode is required to start mesh service")
+            return
+        }
+        service.startAdvertisingOnly(displayName, listener)
+        _state.value = _state.value.copy(isAdvertising = service.isRunning(), isDiscovering = false)
+    }
+
+    fun startDiscoveryOnly(displayName: String) {
+        if (!prefs.getEmergencyModeEnabled()) {
+            _state.value = _state.value.copy(lastError = "Emergency Mode is required to start mesh service")
+            return
+        }
+        service.startDiscoveryOnly(displayName, listener)
+        _state.value = _state.value.copy(isAdvertising = false, isDiscovering = service.isRunning())
+    }
+
     fun stop() {
         service.stop()
         _state.value = _state.value.copy(isAdvertising = false, isDiscovering = false, connectedDevices = 0)

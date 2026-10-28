@@ -21,6 +21,7 @@ import com.example.capstone.presentation.viewmodel.LiveDisasterViewModel
 import com.example.capstone.presentation.viewmodel.LoadState
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
+import org.osmdroid.tileprovider.tilesource.XYTileSource
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.FolderOverlay
@@ -58,13 +59,62 @@ class LiveDisasterMapFragment : Fragment() {
             parentFragmentManager.popBackStack()
         }
 
+        // Wire up feed selection chips
+        val chipGlobal = view.findViewById<com.google.android.material.chip.Chip>(R.id.liveFeedGlobal)
+        val chipIndia = view.findViewById<com.google.android.material.chip.Chip>(R.id.liveFeedIndia)
+        val chipLocal = view.findViewById<com.google.android.material.chip.Chip>(R.id.liveFeedLocal)
+
+        chipGlobal?.setOnClickListener {
+            chipGlobal.isChecked = true
+            chipIndia?.isChecked = false
+            chipLocal?.isChecked = false
+            viewModel.loadGlobalEvents()
+        }
+
+        chipIndia?.setOnClickListener {
+            chipIndia.isChecked = true
+            chipGlobal?.isChecked = false
+            chipLocal?.isChecked = false
+            viewModel.loadIndiaEvents()
+        }
+
+        chipLocal?.setOnClickListener {
+            chipLocal.isChecked = true
+            chipGlobal?.isChecked = false
+            chipIndia?.isChecked = false
+            // Use LocationHelper to fetch last known location and load nearby events
+            com.example.capstone.location.LocationHelper.fetchLastKnownLocation(requireContext()) { loc ->
+                if (loc == null) {
+                    activity?.runOnUiThread {
+                        emptyView.visibility = View.VISIBLE
+                        emptyView.text = "Grant location permission to use Local Feed."
+                    }
+                } else {
+                    activity?.runOnUiThread {
+                        viewModel.loadNearby(loc.latitude, loc.longitude)
+                    }
+                }
+            }
+        }
+
         observeState()
         viewModel.loadGlobalEvents()
         viewModel.loadSourceStatus()
     }
 
     private fun setupMap() {
-        mapView.setTileSource(TileSourceFactory.MAPNIK)
+        // Prefer Humanitarian/OSM HOT tiles which are more permissive for disaster apps
+        val humanitarianSource = XYTileSource(
+            "OSM_HOT",
+            0, 19, 256, ".png",
+            arrayOf(
+                "https://a.tile.openstreetmap.fr/hot/",
+                "https://b.tile.openstreetmap.fr/hot/",
+                "https://c.tile.openstreetmap.fr/hot/"
+            ),
+            getString(R.string.map_open_error) // reuse small attribution string to avoid hardcoding
+        )
+        mapView.setTileSource(humanitarianSource)
         mapView.setMultiTouchControls(true)
         mapView.controller.setZoom(2.0)
         mapView.controller.setCenter(GeoPoint(20.0, 0.0))
